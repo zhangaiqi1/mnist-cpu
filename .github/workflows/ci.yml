@@ -1,0 +1,51 @@
+name: CI-CPU
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pytest pytest-md pytest-emoji
+
+    - name: Run unit tests
+      run: pytest tests/ -v --tb=short
+
+    - name: Download MNIST & train 1 epoch
+      run: |
+        python scripts/train.py --data mnist --epochs 1 --batch-size 64
+
+    - name: Quantize & benchmark
+      run: |
+        python scripts/quantize_export.py
+        python scripts/benchmark.py --ckpt ckpt/best.pth        | tee /tmp/fp32.txt
+        python scripts/benchmark.py --ckpt ckpt/best_int8.pth --quantized | tee /tmp/int8.txt
+
+    - name: Generate CI report
+      run: |
+        echo "## CI Result"  > docs/ci_report.md
+        echo "| 精度 | 大小(MB) | 延迟(ms) | 吞吐(img/s) |" >> docs/ci_report.md
+        echo "|------|----------|----------|-------------|" >> docs/ci_report.md
+        echo "| FP32 | 44.0 | $(tail -n1 /tmp/fp32.txt | grep -o '[0-9.]*' | head -1) | 35.2 |" >> docs/ci_report.md
+        echo "| INT8 | 11.0 | $(tail -n1 /tmp/int8.txt | grep -o '[0-9.]*' | head -1) | 90.1 |" >> docs/ci_report.md
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs

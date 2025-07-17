@@ -14,7 +14,7 @@ def main():
     parser.add_argument('--data', default='mnist', choices=['mnist', 'cifar10', 'folder'])
     parser.add_argument('--root', default='./data')
     parser.add_argument('--model', default='resnet18')
-    parser.add_argument('--epochs', type=int, default=3)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--resume', default='')  # 断点路径

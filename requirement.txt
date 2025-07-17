@@ -1,2 +1,7 @@
 tqdm
 tensorboard
+fastapi
+uvicorn[standard]
+python-multipart
+torch-ao
+pytest
